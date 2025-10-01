@@ -18,7 +18,7 @@ Import and clean the `pols-month.csv` dataset.
 pols_month_df =
   read_csv("fivethirtyeight_datasets/pols-month.csv") |> 
   separate(
-  mon, into = c("year", "month", "day"), sep = "-", convert = TRUE
+    mon, into = c("year", "month", "day"), sep = "-", convert = TRUE
   ) |> #separates mon into year, month, and day based on the dash in the string name and converts to integers
   mutate(
     month = case_match(
@@ -53,7 +53,7 @@ Clean `snp.csv` in the same way.
 snp_df =
   read_csv("fivethirtyeight_datasets/snp.csv") |> 
   separate(
-  date, into = c("month", "day", "year"), sep = "/", convert = TRUE
+    date, into = c("month", "day", "year"), sep = "/", convert = TRUE
   ) |> #separates date into month, day, year based on the slash in the string name and converts to integers
   mutate(
     month = case_match(
@@ -196,9 +196,69 @@ zip_zori_df =
     values_to = "rent",
     names_prefix = "x" #deletes prefix string from each name value
   ) |> #put vars representing each date into its own var with another var corresponding to rent prices
+  separate(
+    date, into = c("year", "month", "day"), sep = "_", convert = TRUE
+  ) |> #separate date into year, month, and day
   rename(zip_code = region_name) |> 
   rename(county = county_name) |> 
   mutate(county = str_remove(county, " County")) |> #deletes suffix string from each value
-  relocate(zip_code, county, date, rent) #puts zip code, county, date, and rent at the front
+  relocate(zip_code, county, month, day, year, rent) #puts zip code, county, month, day, year, and rent at the front
 ```
 
+Merge datasets.
+
+```{r}
+zillow_tidy =
+  left_join(zip_zori_df, zip_codes_df, by = c("zip_code", "county")) |> 
+  relocate(zip_code, neighborhood, county, month, day, year, rent) |> 
+  mutate(zip_code = as.character(zip_code)) #convert zip code to character var
+
+#use skimr to determine number of unique obs per zip code and neighborhood
+skimr::skim(zillow_tidy)
+```
+
+After tidying and combining `Zip Codes.csv` and `Zip_zori_uc_sfrcondomfr_sm_month_NYC.csv`, the resulting dataset has `r nrow(zillow_tidy)` rows (observations). There are 149 unique zip codes and 42 unique neighborhoods included in this dataset. 
+
+**Determine which zip codes appear in the ZIP code dataset but not in the Zillow Rental Price dataset.**
+
+```{r}
+zip_codes_df = arrange(zip_codes_df, zip_code, county, neighborhood)
+
+zip_zori_df = arrange(zip_zori_df, zip_code, county)
+```
+
+The zip codes that appear in the ZIP code dataset but not in the Zillow Rental Price dataset appear to be ones whose geographical range is very small and in areas that likely do not include residential buildings. For example, 10047, 10048, and 10055 are all excluded from the Zillow Rental Price dataset. In doing some research, I found that 10048 used to be the zip code assigned only to the World Trade Centers. The other two similarly only represent geographic areas covering an office building or plaza, in which no one is living. Therefore, it makes sense that these are excluded from the Zillow Rental Price dataset because there are no rental units available in those zip codes. 
+
+**Compare how rental prices changed between January 2020 and 2021.**
+
+```{r}
+compare_zillow_tidy =
+  select(zillow_tidy, zip_code, month, year, rent) |> 
+  filter(month == 1, year %in% c(2020, 2021)) |> 
+  arrange(zip_code)
+```
+
+By scanning the data, the price of rent generally drops from January 2020 to January 2021 by zip code. 
+
+**Table of 10 zip codes with largest drop in price from Jan 2020 - Jan 2021.**
+
+```{r}
+compare_zillow_tidy =
+  select(zillow_tidy, zip_code, month, year, rent, neighborhood, county) |> 
+  filter(month == 1, year %in% c(2020, 2021)) |> #filter to only include January of 2020 and 2021
+  arrange(zip_code) |> #arrange by zip code
+  pivot_wider(
+    names_from = year,
+    values_from = rent
+  ) |> #put each year as its own variable with values representing the rent
+  mutate(
+    price_drop = `2020` - `2021`
+  ) |> #calculate the price drop between Jan 2020 and Jan 2021
+  slice_max(order_by = price_drop, n = 10) |> #retain only the 10 largest price drops
+  select(-month) |> #get rid of month (all of them are January)
+  relocate(zip_code, price_drop) #move zip code and price drop vars to the front
+
+compare_zillow_tidy |> knitr::kable() #create table
+```
+
+The table shows that the largest drop in price from January 2020 to January 2021 occurred in the zip code 10007 (in Lower Manhattan), in which the price of rent dropped by $912.60. All the neighborhoods for the 10 zip codes with the largest drop in price are in Manhattan.
