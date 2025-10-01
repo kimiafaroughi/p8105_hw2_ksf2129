@@ -7,6 +7,7 @@ output: github_document
 
 ```{r setup, echo = FALSE, message = FALSE}
 library(tidyverse)
+library(readxl)
 ```
 
 ## Problem 1
@@ -123,3 +124,55 @@ final_df =
 The `pols_month.csv` dataset contains 822 observations of 9 variables on the number of national politicians who are democratic or republican at any given time (represented by a yyyy-mm-dd format) in various categories: president, governors, senators, and representatives. The `snp.csv` dataset contains 787 observations of 2 variables on the closing values of the S&P stock index, where each observation is on a different date (represented by a m/d/yy format). The `unemployment.csv` dataset contains 68 observations of 13 variables on the percentage of unemployment with each month as a separate variable, where each observation represents a unique year. 
 
 In the resulting dataset, there are `r nrow(final_df)` rows (observations) and `r ncol(final_df)` columns (variables). The variables in this dataset include: `r names(final_df)`. The range of years included in this dataset is from `r min(final_df$year)` to `r max(final_df$year)`. 
+
+
+## Problem 2
+
+Import and clean the Mr. Trash Wheel sheet in the `202509 Trash Wheel Collection Data.xlsx` dataset.
+
+```{r}
+mr_trash_df = 
+  read_excel("202509 Trash Wheel Collection Data.xlsx", 
+             sheet = "Mr. Trash Wheel",
+             range = "A2:N709") |> #import data from excel, omit non-data
+  janitor::clean_names() |> #clean var names
+  mutate(sports_balls = round(sports_balls)) |> #round sports balls to nearest integer
+  mutate(sports_balls = as.integer(sports_balls)) |> #convert sports balls to integer
+  mutate(year = as.double(year)) |> #convert year to double
+  mutate(wheel = "mr_trash") #create var for which wheel this is
+```
+
+Import and clean the Professor Trash Wheel sheet in the `202509 Trash Wheel Collection Data.xlsx` dataset.
+
+```{r}
+prof_trash_df = 
+  read_excel("202509 Trash Wheel Collection Data.xlsx", 
+             sheet = "Professor Trash Wheel",
+             range = "A2:M134") |> #import data from excel, omit non-data
+  janitor::clean_names() |> #clean var names
+  mutate(wheel = "professor_trash") #create var for which wheel this is
+```
+
+Import and clean the Gwynns Falls Trash Wheel sheet in the `202509 Trash Wheel Collection Data.xlsx` dataset.
+
+```{r}
+gwynns_falls_df = 
+  read_excel("202509 Trash Wheel Collection Data.xlsx", 
+             sheet = "Gwynns Falls Trash Wheel",
+             range = "A2:L351") |> #import data from excel, omit non-data
+  janitor::clean_names() |> #clean var names
+  mutate(wheel = "gwynns_falls") #create var for which wheel this is
+```
+
+Combine datasets into single tidy dataset.
+
+```{r}
+mr_trash_tidy = 
+  bind_rows(mr_trash_df, prof_trash_df, gwynns_falls_df)
+```
+
+In combining the Mr. Trash Wheel, Professor Trash Wheel, and Gwynns Falls Trash Wheel sheets in the `202509 Trash Wheel Collection Data.xlsx` dataset, the following variables are included: `r names(mr_trash_tidy)`. Key variables include `wheel`, which represents whether the data is from the Mr. Trash, Professor Trash, or Gwynns Falls wheels, and `date`, which represents the date of the observation (each dumpster). `sports_balls` is also important to point out as the variable that represents the number of sports balls counted in each dumpster, but data for `sports_balls` is only available for the Mr. Trash Wheel. `weight_tons` represents the weight in tons of trash collected in each dumpster, and `cigarette_butts` is the number of cigarette butts counted in each dumpster. 
+
+There are `r nrow(mr_trash_tidy)` rows (observations) and `r ncol(mr_trash_tidy)` columns (variables). 
+
+The total weight of trash collected by the Professor Trash Wheel based on available data is `r filter(mr_trash_tidy, wheel == "professor_trash") |> select(weight_tons) |> sum()` tons. The total number of cigarette butts collected by the Gwynns Falls Trash Wheel in June of 2022 based on available data is `r filter(mr_trash_tidy, wheel == "gwynns_falls", month == "June", year == "2022") |> select(cigarette_butts) |> sum()`.
