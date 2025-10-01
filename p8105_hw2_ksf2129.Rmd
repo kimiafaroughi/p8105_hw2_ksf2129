@@ -176,3 +176,29 @@ In combining the Mr. Trash Wheel, Professor Trash Wheel, and Gwynns Falls Trash 
 There are `r nrow(mr_trash_tidy)` rows (observations) and `r ncol(mr_trash_tidy)` columns (variables). 
 
 The total weight of trash collected by the Professor Trash Wheel based on available data is `r filter(mr_trash_tidy, wheel == "professor_trash") |> select(weight_tons) |> sum()` tons. The total number of cigarette butts collected by the Gwynns Falls Trash Wheel in June of 2022 based on available data is `r filter(mr_trash_tidy, wheel == "gwynns_falls", month == "June", year == "2022") |> select(cigarette_butts) |> sum()`.
+
+## Problem 3
+
+Import and tidy the `Zip Codes.csv` and `Zip_zori_uc_sfrcondomfr_sm_month_NYC.csv` datasets.
+
+```{r}
+zip_codes_df =
+  read_csv("zillow_data/Zip Codes.csv") |> 
+  janitor::clean_names() |> 
+  relocate(zip_code, county, neighborhood) #puts zip code, county, and neighborhood at the front
+
+zip_zori_df =
+  read_csv("zillow_data/Zip_zori_uc_sfrcondomfr_sm_month_NYC.csv") |> 
+  janitor::clean_names() |> 
+  pivot_longer(
+    cols = x2015_01_31:x2024_08_31,
+    names_to = "date",
+    values_to = "rent",
+    names_prefix = "x" #deletes prefix string from each name value
+  ) |> #put vars representing each date into its own var with another var corresponding to rent prices
+  rename(zip_code = region_name) |> 
+  rename(county = county_name) |> 
+  mutate(county = str_remove(county, " County")) |> #deletes suffix string from each value
+  relocate(zip_code, county, date, rent) #puts zip code, county, date, and rent at the front
+```
+
