@@ -22,27 +22,24 @@ pols_month_df =
   ) |> #separates mon into year, month, and day based on the dash in the string name and converts to integers
   mutate(
     month = case_match(
-    month,
-    1 ~ "January",
-    2 ~ "February",
-    3 ~ "March",
-    4 ~ "April",
-    5 ~ "May",
-    6 ~ "June",
-    7 ~ "July",
-    8 ~ "August",
-    9 ~ "September",
-    10 ~ "October",
-    11 ~ "November",
-    12 ~ "December"
-    )
-  ) |> #replaces month number with month name
-  mutate(
+      month,
+      1 ~ "January",
+      2 ~ "February",
+      3 ~ "March",
+      4 ~ "April",
+      5 ~ "May",
+      6 ~ "June",
+      7 ~ "July",
+      8 ~ "August",
+      9 ~ "September",
+      10 ~ "October",
+      11 ~ "November",
+      12 ~ "December"), #replaces month number with month name
     president = case_match(
       prez_gop,
       1 ~ "gop",
-      0 ~ "dem")
-  ) |> #creates president var
+      0 ~ "dem") #creates president var
+  ) |> 
   select(-prez_gop, -prez_dem, -day) |> #drop prez_gop, prez_dem, and day from dataset
   relocate(year, month) #make year and month the leading columns
 ```
@@ -57,24 +54,22 @@ snp_df =
   ) |> #separates date into month, day, year based on the slash in the string name and converts to integers
   mutate(
     month = case_match(
-    month,
-    1 ~ "January",
-    2 ~ "February",
-    3 ~ "March",
-    4 ~ "April",
-    5 ~ "May",
-    6 ~ "June",
-    7 ~ "July",
-    8 ~ "August",
-    9 ~ "September",
-    10 ~ "October",
-    11 ~ "November",
-    12 ~ "December"
-    )
-  ) |> #replaces month number with month name
-  mutate(
-    year = ifelse(year <= 15, 2000 + year, 1900 + year)
-    ) |> #add 19 to years 0-15, and 20 to all others (for complete year to be consistent with other datasets)
+      month,
+      1 ~ "January",
+      2 ~ "February",
+      3 ~ "March",
+      4 ~ "April",
+      5 ~ "May",
+      6 ~ "June",
+      7 ~ "July",
+      8 ~ "August",
+      9 ~ "September",
+      10 ~ "October",
+      11 ~ "November",
+      12 ~ "December"), #replaces month number with month name
+    #add 19 to years 0-15, and 20 to all others (for complete year to be consistent with other datasets)
+    year = ifelse(year <= 15, 2000 + year, 1900 + year) 
+  ) |> 
   select(-day) |> #drop day from dataset
   relocate(year, month) #make year and month the leading columns
 ```
@@ -91,19 +86,19 @@ unemployment_df =
   ) |> #puts unemployment % for each month var into one column indicating month and one indicating unemployment %
   mutate(
     month = case_match(
-    month,
-    "Jan" ~ "January",
-    "Feb" ~ "February",
-    "Mar" ~ "March",
-    "Apr" ~ "April",
-    "May" ~ "May",
-    "Jun" ~ "June",
-    "Jul" ~ "July",
-    "Aug" ~ "August",
-    "Sep" ~ "September",
-    "Oct" ~ "October",
-    "Nov" ~ "November",
-    "Dec" ~ "December"
+      month,
+      "Jan" ~ "January",
+      "Feb" ~ "February",
+      "Mar" ~ "March",
+      "Apr" ~ "April",
+      "May" ~ "May",
+      "Jun" ~ "June",
+      "Jul" ~ "July",
+      "Aug" ~ "August",
+      "Sep" ~ "September",
+      "Oct" ~ "October",
+      "Nov" ~ "November",
+      "Dec" ~ "December"
     )
   ) |> 
   rename(year = Year) #make column name for year lowercase
@@ -136,10 +131,12 @@ mr_trash_df =
              sheet = "Mr. Trash Wheel",
              range = "A2:N709") |> #import data from excel, omit non-data
   janitor::clean_names() |> #clean var names
-  mutate(sports_balls = round(sports_balls)) |> #round sports balls to nearest integer
-  mutate(sports_balls = as.integer(sports_balls)) |> #convert sports balls to integer
-  mutate(year = as.double(year)) |> #convert year to double
-  mutate(wheel = "mr_trash") #create var for which wheel this is
+  mutate(
+    sports_balls = round(sports_balls), #round sports balls to nearest integer
+    sports_balls = as.integer(sports_balls), #convert sports balls to integer
+    year = as.double(year), #convert year to double
+    wheel = "mr_trash", #create var for which wheel this is
+  )
 ```
 
 Import and clean the Professor Trash Wheel sheet in the `202509 Trash Wheel Collection Data.xlsx` dataset.
@@ -199,8 +196,7 @@ zip_zori_df =
   separate(
     date, into = c("year", "month", "day"), sep = "_", convert = TRUE
   ) |> #separate date into year, month, and day
-  rename(zip_code = region_name) |> 
-  rename(county = county_name) |> 
+  rename(zip_code = region_name, county = county_name) |> 
   mutate(county = str_remove(county, " County")) |> #deletes suffix string from each value
   relocate(zip_code, county, month, day, year, rent) #puts zip code, county, month, day, year, and rent at the front
 ```
